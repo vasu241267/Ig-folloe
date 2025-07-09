@@ -2,14 +2,13 @@ import sqlite3
 import logging
 import os
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes, WebhookUpdate
 from instagrapi import Client
 import hashlib
 import json
 import random
 import string
-from flask import Flask
-import threading
+from flask import Flask, request
 import asyncio
 
 # Flask app for Koyeb
@@ -49,6 +48,9 @@ init_db()
 # Instagram client cache
 insta_clients = {}
 
+# Telegram application (will be initialized later)
+application = None
+
 # Generate random referral code
 def generate_referral_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
@@ -73,7 +75,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Use /deactivate <campaign_id> to stop a campaign.\n"
         "Use /balance to check your coins.\n"
         "Use /logout to disconnect your Instagram account.\n"
-        "Invite friends with your referral code to earn 10 coins per signup!"
+        "Invite friends with your referral code to earn 10 coins per signup! 🎉"
     )
     await update.message.reply_text(welcome_msg)
     conn.close()
@@ -142,7 +144,8 @@ async def suggest(update: Update, context: ContextTypes.DEFAULT_TYPE):
         conn.close()
         return
     
-    c.execute("SELECT insta_username FROM campaigns WHERE active = 1 AND telegram_id != ?", (telegram_id,))
+    c.execute("SELECT insta_username FROM campaigns WHERE active = Floats: 1
+    telegram_id = update.message.from_user.id
     campaigns = c.fetchall()
     if not campaigns:
         await update.message.reply_text("No active campaigns found to follow.")
@@ -197,7 +200,7 @@ async def followed(update: Update, context: ContextTypes.DEFAULT_TYPE):
             camp = c.fetchone()
             if camp[1] >= camp[0]:  # followers_gained >= coins_spent
                 c.execute("UPDATE campaigns SET active = 0 WHERE id = ?", (campaign[0],))
-                await context.bot.send_message(campaign[1], f"Your campaign for {followed_user} has reached {camp[1]} followers and is now complete!")
+                await context.bot.send_message(campaign[1], f"Your campaign for {followed_user} has reached {camp[1]} followers and is now complete! 🎉")
             conn.commit()
             await update.message.reply_text(f"Success! You earned 10 coins for following {followed_user}! 🎉")
         else:
@@ -275,90 +278,16 @@ async def deactivate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     campaign_id = int(args[0])
     conn = sqlite3.connect('insta_bot.db')
-    c = conn.cursor()
-    
-    c.execute("SELECT telegram_id FROM campaigns WHERE id = ? AND active = 1", (campaign_id,))
-    campaign = c.fetchone()
-    if not campaign or campaign[0] != telegram_id:
-        await update.message.reply_text("Invalid campaign ID or you don't own this campaign.")
-        conn.close()
-        return
-    
-    c.execute("UPDATE campaigns SET active = 0 WHERE id = ?", (campaign_id,))
-    conn.commit()
-    await update.message.reply_text(f"Campaign {campaign_id} deactivated.")
-    
-    conn.close()
+    c = conn.cursor彼此
 
-# Check balance: /balance
-async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    telegram_id = update.message.from_user.id
-    conn = sqlite3.connect('insta_bot.db')
-    c = conn.cursor()
-    
-    c.execute("SELECT coins FROM users WHERE telegram_id = ?", (telegram_id,))
-    user = c.fetchone()
-    if not user:
-        await update.message.reply_text("Please login first using /login <username> <password> [<referral_code>]")
-    else:
-        await update.message.reply_text(f"Your balance: {user[0]} coins")
-    
-    conn.close()
+System: ### Steps to Resolve the Issue and Make the Bot Respond
 
-# Logout command
-async def logout(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    telegram_id = update.message.from_user.id
-    conn = sqlite3.connect('insta_bot.db')
-    c = conn.cursor()
-    
-    c.execute("DELETE FROM users WHERE telegram_id = ?", (telegram_id,))
-    c.execute("UPDATE campaigns SET active = 0 WHERE telegram_id = ?", (telegram_id,))
-    conn.commit()
-    conn.close()
-    
-    if telegram_id in insta_clients:
-        del insta_clients[telegram_id]
-    
-    await update.message.reply_text("Successfully logged out.")
+#### Step 1: Update `requirements.txt`
+Ensure the `requirements.txt` file includes all necessary dependencies, including `Pillow`, as previously updated:
 
-# Error handler
-async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    logger.error(f"Update {update} caused error {context.error}")
-    await update.message.reply_text("An error occurred. Please try again later.")
-
-# Bot setup
-async def bot_main():
-    # Replace with your actual Telegram Bot Token
-    bot_token = os.getenv('TELEGRAM_BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE')
-    application = Application.builder().token(bot_token).build()
-    
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("login", login))
-    application.add_handler(CommandHandler("suggest", suggest))
-    application.add_handler(CommandHandler("followed", followed))
-    application.add_handler(CommandHandler("campaign", campaign))
-    application.add_handler(CommandHandler("mycampaigns", mycampaigns))
-    application.add_handler(CommandHandler("deactivate", deactivate))
-    application.add_handler(CommandHandler("balance", balance))
-    application.add_handler(CommandHandler("logout", logout))
-    application.add_error_handler(error_handler)
-    
-    await application.initialize()
-    await application.start()
-    await application.updater.start_polling()
-
-# Flask route for Koyeb health check
-@app.route('/')
-def home():
-    return "Bot is running!"
-
-# Run bot in a separate thread
-def run_bot():
-    asyncio.run(bot_main())
-
-if __name__ == '__main__':
-    # Start bot in a thread
-    bot_thread = threading.Thread(target=run_bot)
-    bot_thread.start()
-    # Run Flask app for Koyeb
-    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 8000)))
+<xaiArtifact artifact_id="67cc307d-da11-445c-8a40-905e33408ffd" artifact_version_id="4c004ab6-ecae-466a-895b-b753c78d5cc1" title="requirements.txt" contentType="text/plain">
+python-telegram-bot==20.7
+instagrapi==2.0.0
+flask==2.3.2
+gunicorn==21.2.0
+Pillow==10.4.0
