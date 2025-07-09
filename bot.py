@@ -387,9 +387,13 @@ async def webhook():
         if request.is_json:
             json_data = request.get_json()
             update = Update.de_json(json_data, application.bot)
-            await application.process_update(update)
-            logger.debug("Webhook update processed successfully")
-            return jsonify({"status": "ok"}), 200
+            if update:
+                await application.process_update(update)
+                logger.debug("Webhook update processed successfully")
+                return jsonify({"status": "ok"}), 200
+            else:
+                logger.error("Invalid update received")
+                return jsonify({"status": "error", "message": "Invalid update"}), 400
         else:
             logger.error("Webhook received non-JSON data")
             return jsonify({"status": "error", "message": "Invalid content type"}), 400
@@ -431,7 +435,7 @@ async def init_bot():
         
         # Set webhook
         webhook_url = os.getenv('WEBHOOK_URL', 'https://unsightly-hinda-imdigitalvasu-3-80ce8ee1.koyeb.app/webhook')
-        await application.bot.set_webhook(url=webhook_url)
+        await application.bot.set_webhook(url=webhook_url, max_connections=40)
         logger.info(f"Webhook set to {webhook_url}")
     except Exception as e:
         logger.error(f"Bot initialization error: {e}")
@@ -441,8 +445,13 @@ async def init_bot():
 def run_bot():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(init_bot())
-    loop.run_forever()
+    try:
+        loop.run_until_complete(init_bot())
+        loop.run_forever()
+    except Exception as e:
+        logger.error(f"Bot run error: {e}")
+    finally:
+        loop.close()
 
 if __name__ == '__main__':
     try:
