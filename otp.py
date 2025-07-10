@@ -1417,11 +1417,11 @@ async def webhook(request):
     return web.Response()
     
 async def main():
-    init_db()
-    application = Application.builder().token(BOT_TOKEN).build()
+        init_db()
+        application = Application.builder().token(BOT_TOKEN).build()
 
-    # Initialize the application
-    await application.initialize()
+        # Initialize the application
+        await application.initialize()
 
         application.add_handler(CommandHandler("start", start))
         application.add_handler(CommandHandler("menu", menu))
