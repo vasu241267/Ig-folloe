@@ -1450,7 +1450,7 @@ async def main():
         await site.start()
         logger.info(f"Web server started on port {PORT}")
 
-    # Keep the application running
-    await asyncio.Event().wait()
+        # Keep the application running
+        await asyncio.Event().wait()
 if __name__ == "__main__":
     asyncio.run(main())
