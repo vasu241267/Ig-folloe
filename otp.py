@@ -1444,7 +1444,6 @@ async def main():
             webhook_url=f"{WEBHOOK_URL}/webhook",
             health_check_path="/health"
         )
-
     except Exception as e:
          
 if __name__ == "__main__":
