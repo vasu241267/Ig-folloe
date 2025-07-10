@@ -1411,12 +1411,10 @@ async def set_bot_commands(application: Application):
 
 
 async def webhook(request):
-    app = request.app['telegram']
-    update = Update.de_json(await request.json(), app.bot)
-    await app.process_update(update)
-    return web.json_response({"status": "ok"})
-
-from aiohttp import web
+    data = await request.json()
+    update = Update.de_json(data, bot)
+    await application.update_queue.put(update)
+    return web.Response(text="OK")
 
 async def health_check(_: web.Request):
     return web.Response(text="healthy")
@@ -1425,27 +1423,36 @@ async def main():
     try:
         init_db()
 
-        app = Application.builder().token(BOT_TOKEN).build()
+        global application
+        global bot
 
-        # Add routes AFTER creating app
-        app.web_app.router.add_get("/health", health_check)
+        application = Application.builder().token(BOT_TOKEN).build()
+        bot = application.bot
 
-        app.add_handler(CommandHandler("start", start))
-        app.add_handler(CommandHandler("menu", menu))
-        app.add_handler(CommandHandler("redeem", redeem))
-        app.add_handler(CommandHandler("admin", admin_panel))
-        app.add_handler(CallbackQueryHandler(button_callback))
-        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
-        app.job_queue.run_once(set_bot_commands, 0)
+        application.add_handler(CommandHandler("start", start))
+        application.add_handler(CommandHandler("menu", menu))
+        application.add_handler(CommandHandler("redeem", redeem))
+        application.add_handler(CommandHandler("admin", admin_panel))
+        application.add_handler(CallbackQueryHandler(button_callback))
+        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+        application.job_queue.run_once(set_bot_commands, 0)
 
-        await app.run_webhook(
-            listen="0.0.0.0",
-            port=PORT,
-            webhook_url="https://zygotic-eydie-imdigitalvasu-2-ae817d3e.koyeb.app/webhook"
-        )
+        # Set webhook manually
+        await bot.set_webhook(url=f"{WEBHOOK_URL}/webhook")
+
+        # Set up aiohttp manually
+        app = web.Application()
+        app.router.add_post("/webhook", webhook)
+        app.router.add_get("/health", health_check)
+
+        runner = web.AppRunner(app)
+        await runner.setup()
+        site = web.TCPSite(runner, "0.0.0.0", PORT)
+        await site.start()
+
+        logger.info(f"Server started on port {PORT}")
+        await application.start()
+        await asyncio.Event().wait()
 
     except Exception as e:
         logger.error(f"Error in main: {e}")
-
-if __name__ == "__main__":
-    asyncio.run(main())
