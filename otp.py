@@ -1445,6 +1445,7 @@ async def main():
             health_check_path="/health"
         )
     except Exception as e:
+        logger.error(f"Error in main: {e}")
          
 if __name__ == "__main__":
     asyncio.run(main())
