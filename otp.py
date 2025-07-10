@@ -1421,14 +1421,15 @@ from aiohttp import web
 async def health_check(_: web.Request):
     return web.Response(text="healthy")
 
-# Add before `run_webhook()`
-app.web_app.router.add_get("/health", health_check)
-
 async def main():
     try:
         init_db()
 
         app = Application.builder().token(BOT_TOKEN).build()
+
+        # Add routes AFTER creating app
+        app.web_app.router.add_get("/health", health_check)
+
         app.add_handler(CommandHandler("start", start))
         app.add_handler(CommandHandler("menu", menu))
         app.add_handler(CommandHandler("redeem", redeem))
