@@ -107,6 +107,8 @@ TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 FORCE_SUB_CHANNEL = "@darkdorking"
 ADMIN_IDS = [6972264549]
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Fetch from environment variable
+PORT = int(os.getenv("PORT", 8443))
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
