@@ -1422,6 +1422,7 @@ async def health(request):
 async def main():
     try:
         init_db()
+
         app = Application.builder().token(BOT_TOKEN).build()
         app.add_handler(CommandHandler("start", start))
         app.add_handler(CommandHandler("menu", menu))
@@ -1430,24 +1431,21 @@ async def main():
         app.add_handler(CallbackQueryHandler(button_callback))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
         app.job_queue.run_once(set_bot_commands, 0)
-        
+
         if not WEBHOOK_URL:
             logger.error("WEBHOOK_URL not set")
             return
-        await app.bot.set_webhook(url=f"{WEBHOOK_URL}/webhook")
-        web_app = web.Application()
-        web_app['telegram'] = app
-        web_app.router.add_post('/webhook', webhook)
-        web_app.router.add_get('/health', health)
-        
-        runner = web.AppRunner(web_app)
-        await runner.setup()
-        site = web.TCPSite(runner, '0.0.0.0', PORT)
-        await site.start()
-        logger.info(f"Server started on port {PORT}")
-        
-        await asyncio.Event().wait()
+
+        logger.info("Starting bot with webhook...")
+
+        await app.run_webhook(
+            listen="0.0.0.0",
+            port=PORT,
+            webhook_url=f"{WEBHOOK_URL}/webhook",
+            health_check_path="/health"
+        )
+
     except Exception as e:
-        logger.error(f"Error in main: {e}")
+         
 if __name__ == "__main__":
     asyncio.run(main())
