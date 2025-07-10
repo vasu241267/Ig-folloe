@@ -1416,9 +1416,14 @@ async def webhook(request):
     await app.process_update(update)
     return web.json_response({"status": "ok"})
 
-async def health(request):
-    return web.json_response({"status": "healthy"})
-        
+from aiohttp import web
+
+async def health_check(_: web.Request):
+    return web.Response(text="healthy")
+
+# Add before `run_webhook()`
+app.web_app.router.add_get("/health", health_check)
+
 async def main():
     try:
         init_db()
@@ -1432,20 +1437,14 @@ async def main():
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
         app.job_queue.run_once(set_bot_commands, 0)
 
-        if not WEBHOOK_URL:
-            logger.error("WEBHOOK_URL not set")
-            return
-
-        logger.info("Starting bot with webhook...")
-
         await app.run_webhook(
             listen="0.0.0.0",
             port=PORT,
-            webhook_url=f"{WEBHOOK_URL}/webhook",
-            health_check_path="/health"
+            webhook_url="https://zygotic-eydie-imdigitalvasu-2-ae817d3e.koyeb.app/webhook"
         )
+
     except Exception as e:
         logger.error(f"Error in main: {e}")
-         
+
 if __name__ == "__main__":
     asyncio.run(main())
