@@ -1452,7 +1452,7 @@ async def main():
 
         logger.info(f"Server started on port {PORT}")
         await application.initialize()
-        await application.start()
+        
         await application.updater.start()
         await asyncio.Event().wait()
 
