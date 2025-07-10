@@ -1411,23 +1411,17 @@ async def set_bot_commands(application: Application):
 
 
 async def webhook(request):
-    data = await request.json()
-    update = Update.de_json(data, bot)
-    await application.update_queue.put(update)
-    return web.Response(text="OK")
-
-async def health_check(_: web.Request):
-    return web.Response(text="healthy")
-
+    app = request.app['telegram_app']
+    update = Update.de_json(await request.json(), app.bot)
+    await app.process_update(update)
+    return web.Response()
+    
 async def main():
-    try:
-        init_db()
+    init_db()
+    application = Application.builder().token(BOT_TOKEN).build()
 
-        global application
-        global bot
-
-        application = Application.builder().token(BOT_TOKEN).build()
-        bot = application.bot
+    # Initialize the application
+    await application.initialize()
 
         application.add_handler(CommandHandler("start", start))
         application.add_handler(CommandHandler("menu", menu))
@@ -1438,27 +1432,25 @@ async def main():
         application.job_queue.run_once(set_bot_commands, 0)
 
         # Set webhook manually
-        await bot.set_webhook(url=f"{WEBHOOK_URL}/webhook")
+        if not WEBHOOK_URL:
+          logger.error("WEBHOOK_URL environment variable not set")
+          return
+        await application.bot.set_webhook(url=f"{WEBHOOK_URL}/webhook")
+        logger.info(f"Webhook set to {WEBHOOK_URL}/webhook")
 
-        # Set up aiohttp manually
-        app = web.Application()
-        app.router.add_post("/webhook", webhook)
-        app.router.add_get("/health", health_check)
-
-        runner = web.AppRunner(app)
+    # Set up web server
+        web_app = web.Application()
+        web_app['telegram_app'] = application
+        web_app.router.add_post('/webhook', webhook)
+    
+    # Start web server
+        runner = web.AppRunner(web_app)
         await runner.setup()
-        site = web.TCPSite(runner, "0.0.0.0", PORT)
+        site = web.TCPSite(runner, '0.0.0.0', PORT)
         await site.start()
+        logger.info(f"Web server started on port {PORT}")
 
-        logger.info(f"Server started on port {PORT}")
-        await application.initialize()
-        
-        await application.updater.start()
-        await asyncio.Event().wait()
-
-
-    except Exception as e:
-        logger.error(f"Error in main: {e}")
-
+    # Keep the application running
+    await asyncio.Event().wait()
 if __name__ == "__main__":
     asyncio.run(main())
