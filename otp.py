@@ -1448,4 +1448,4 @@ async def main():
     except Exception as e:
         logger.error(f"Error in main: {e}")
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
