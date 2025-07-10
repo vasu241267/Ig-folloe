@@ -49,7 +49,7 @@ def validate_twilio_credentials(sid: str, token: str) -> bool:
         client.api.accounts(sid).fetch()
         return True
     except TwilioRestException as e:
-        logger.error(f"Twilio credential validation failed: {e}")
+        logger.error(f"Api credential validation failed: {e}")
         return False
 
 def init_db():
@@ -484,7 +484,7 @@ async def show_account(query: Update, context: ContextTypes.DEFAULT_TYPE):
     f"🆔 *User ID:* {user_id}\n"
     f"💰 *Points:* {escape_markdown_v2(str(points))}\n"
 
-    f"🔑 *Twilio Status:* {twilio_status}\n"
+    f"🔑 *Api Status:* {twilio_status}\n"
     f"📞 *Selected Number:* {selected_number}\n"
     f"🛠️ *Account Status:* {status.capitalize()}\n"
     f"🎟️ *Referral Code:* `{referral_code}`\n\n"
@@ -548,15 +548,15 @@ async def show_otps(query: Update, context: ContextTypes.DEFAULT_TYPE):
                     text += "No valid OTP messages found."
             conn.commit()
         except TwilioRestException as e:
-            logger.error(f"Twilio error in show_otps for user {user_id}: {e}")
+            logger.error(f"Api error in show_otps for user {user_id}: {e}")
             if e.status == 402:
                 await query.message.edit_text(
-                    "⚠️ Twilio account has insufficient credits. Please contact the admin.",
+                    "⚠️ Api account has insufficient credits. Please contact the admin.",
                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back")]])
                 )
             else:
                 await query.message.edit_text(
-                    "⚠️ Error fetching OTPs from Twilio. Please try again later.",
+                    "⚠️ Error fetching OTPs from Api. Please try again later.",
                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back")]])
                 )
             return
@@ -617,10 +617,10 @@ async def get_numbers(query: Update, context: ContextTypes.DEFAULT_TYPE):
                     reply_markup=reply_markup,
                 )
             await query.message.edit_text(
-                "⏳ Your request for Twilio credentials is under review by the admin.",
+                "⏳ Your request for Api credentials is under review by the admin.",
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back")]])
             )
-            logger.debug(f"Twilio request submitted by user {user_id}")
+            logger.debug(f"Api request submitted by user {user_id}")
             return
         try:
             client = Client(twilio_sid, twilio_token)
@@ -641,15 +641,15 @@ async def get_numbers(query: Update, context: ContextTypes.DEFAULT_TYPE):
                 await query.message.reply_text(f"📞 {num.phone_number}", reply_markup=reply_markup)
             logger.debug(f"Canadian numbers displayed for user {user_id}")
         except TwilioRestException as e:
-            logger.error(f"Twilio error in get_numbers for user {user_id}: {e}")
+            logger.error(f"Api error in get_numbers for user {user_id}: {e}")
             if e.status == 402:
                 await query.message.edit_text(
-                    "⚠️ Twilio account has insufficient credits. Please contact the admin.",
+                    "⚠️ Api account has insufficient credits. Please contact the admin.",
                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back")]])
                 )
             else:
                 await query.message.edit_text(
-                    "⚠️ Error fetching numbers from Twilio. Please try again later.",
+                    "⚠️ Error fetching numbers from Api. Please try again later.",
                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back")]])
                 )
             return
@@ -695,9 +695,9 @@ async def select_number(query: Update, context: ContextTypes.DEFAULT_TYPE, phone
              number.delete()
              logger.debug(f"Released old number {number.phone_number} for user {user_id}")
         except Exception as e:
-            logger.error(f"Error releasing previous Twilio number(s) for user {user_id}: {e}")
+            logger.error(f"Error releasing previous number(s) for user {user_id}: {e}")
             await query.message.edit_text(
-             "⚠️ Error releasing previous Twilio number. Please try again.",
+             "⚠️ Error releasing previous number. Please try again.",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back")]])
     )
             return
@@ -717,15 +717,15 @@ async def select_number(query: Update, context: ContextTypes.DEFAULT_TYPE, phone
             )
             logger.debug(f"Number {phone_number} purchased by user {user_id}")
         except TwilioRestException as e:
-            logger.error(f"Twilio error in select_number for user {user_id}: {e}")
+            logger.error(f"Api error in select_number for user {user_id}: {e}")
             if e.status == 402:
                 await query.message.edit_text(
-                    "⚠️ Twilio account has insufficient credits. Please contact the admin.",
+                    "⚠️ Api account has insufficient credits. Please contact the admin.",
                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back")]])
                 )
             else:
                 await query.message.edit_text(
-                    "⚠️ Error purchasing number from Twilio. Please try again later.",
+                    "⚠️ Error purchasing number from Api. Please try again later.",
                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back")]])
                 )
             return
@@ -1009,13 +1009,13 @@ async def admin_view_activity(query: Update, context: ContextTypes.DEFAULT_TYPE,
                 else:
                     text += "No OTPs received."
             except TwilioRestException as e:
-                logger.error(f"Twilio error in admin_view_activity for user {user_id}: {e}")
+                logger.error(f"Api error in admin_view_activity for user {user_id}: {e}")
                 if e.status == 402:
-                    text += "⚠️ Twilio account has insufficient credits."
+                    text += "⚠️ Api account has insufficient credits."
                 else:
-                    text += "⚠️ Error fetching OTPs from Twilio."
+                    text += "⚠️ Error fetching OTPs from Api."
         else:
-            text += "No OTPs received (Twilio not set or no number selected)."
+            text += "No OTPs received (Api not set or no number selected)."
         await query.message.edit_text(
             text,
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back")]])
@@ -1191,7 +1191,7 @@ async def admin_remove_twilio(query: Update, context: ContextTypes.DEFAULT_TYPE,
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back")]])
         )
         try:
-            await context.bot.send_message(user_id, "❌ Your Twilio credentials have been removed by the admin. Please request again.")
+            await context.bot.send_message(user_id, "❌ Your Api credentials have been removed by the admin. Please request again.")
         except Exception as e:
             logger.error(f"Error notifying user {user_id}: {e}")
         logger.debug(f"Twilio credentials removed for user {user_id} by admin {query.from_user.id}")
@@ -1256,7 +1256,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     raise ValueError("SID or Token cannot be empty")
                 if not validate_twilio_credentials(sid, token):
                     await update.message.reply_text(
-                        "⚠️ Invalid Twilio credentials. Please check SID and Token and try again.",
+                        "⚠️ Invalid Api credentials. Please check SID and Token and try again.",
                         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back")]])
                     )
                     return
@@ -1269,7 +1269,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             (sid, token, user_id_tuple[0]),
                         )
                         try:
-                            await context.bot.send_message(user_id_tuple[0], "✅ Your Twilio credentials have been set. You can now get numbers!")
+                            await context.bot.send_message(user_id_tuple[0], "✅ Your Api credentials have been set. You can now get numbers!")
                         except Exception as e:
                             logger.error(f"Error notifying user {user_id_tuple[0]}: {e}")
                     await update.message.reply_text(
@@ -1288,7 +1288,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back")]])
                     )
                     try:
-                        await context.bot.send_message(target_user_id, "✅ Your Twilio credentials have been set. You can now get numbers!")
+                        await context.bot.send_message(target_user_id, "✅ Your Api credentials have been set. You can now get numbers!")
                     except Exception as e:
                         logger.error(f"Error notifying user {target_user_id}: {e}")
                     if "set_twilio_user_id" in context.user_data:
@@ -1296,7 +1296,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     if "approve_user_id" in context.user_data:
                         del context.user_data["approve_user_id"]
                 conn.commit()
-                logger.debug(f"Twilio credentials set by admin {user_id}")
+                logger.debug(f"Api credentials set by admin {user_id}")
             except ValueError as e:
                 await update.message.reply_text(
                     f"⚠️ Invalid format: {str(e)}. Please enter Twilio SID and Token in the format: SID,Token",
