@@ -1451,8 +1451,11 @@ async def main():
         await site.start()
 
         logger.info(f"Server started on port {PORT}")
+        await application.initialize()
         await application.start()
+        await application.updater.start()
         await asyncio.Event().wait()
+
 
     except Exception as e:
         logger.error(f"Error in main: {e}")
