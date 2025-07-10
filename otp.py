@@ -101,7 +101,7 @@ def init_db():
                 raise Exception(f"Failed to initialize database after {retries} attempts: {e}")
 
 # Configuration
-BOT_TOKEN = "8020708306:7905683098:AAGsm8_qFqxMcRYotSGZVXg0Ags6ZvueD20"
+BOT_TOKEN = "7905683098:AAGsm8_qFqxMcRYotSGZVXg0Ags6ZvueD20"
 # TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN are for fallback/testing; user-specific credentials are in DB
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
