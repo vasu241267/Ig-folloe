@@ -137,10 +137,10 @@ def init_db():
                 raise Exception(f"Failed to initialize database after {retries} attempts: {e}")
 
 # Configuration
-BOT_TOKEN = "7311288614:AAHecPFp5NnBrs4dJiR_l9lh1GB3zBAP_Yo"
+BOT_TOKEN = "7905683098:AAGsm8_qFqxMcRYotSGZVXg0Ags6ZvueD20"
 FORCE_SUB_CHANNEL = "@darkdorking"
 ADMIN_IDS = [6972264549]
-OTP_GROUP_CHAT_ID = "-1002445692794"
+OTP_GROUP_CHAT_ID = "-1001900843229"
 POINTS_PER_CREDIT_SET = 15  # Points required for 3 credits
 CREDITS_PER_SET = 3  # Credits received for 15 points
 CREDIT_PER_NUMBER = 1  # Credits required per number
@@ -1846,50 +1846,71 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def on_startup(app):
     app.create_task(forward_otps_to_group_periodically(app))
 
-def main():
+from aiohttp import web
+from telegram import Update
+
+async def health_check(request):
+    return web.Response(text="OK", status=200)
+
+async def telegram_webhook(request):
+    data = await request.json()
+    update = Update.de_json(data, app.bot)
+    await app.update_queue.put(update)
+    return web.Response(text="OK")
+
+async def send_startup_test_message():
+    bot = Bot(token=BOT_TOKEN)
     try:
-        init_db()
-        app = Application.builder().token(BOT_TOKEN).post_init(on_startup).build()
-
-        app.add_handler(CommandHandler("start", start))
-        app.add_handler(CommandHandler("menu", menu))
-        app.add_handler(CommandHandler("redeem", redeem))
-        app.add_handler(CallbackQueryHandler(button_callback))
-        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
-        app.add_error_handler(error_handler)
-        
-        
-        
-        async def send_startup_test_message():
-            bot = Bot(token=BOT_TOKEN)
-            try:
-                await bot.send_message(
-                    chat_id=OTP_GROUP_CHAT_ID,
-                    text=escape_markdown_v2("✅ Bot started successfully! This is a test message."),
-                    parse_mode="MarkdownV2"
-                )
-                logger.info(f"Test message sent to group chat {OTP_GROUP_CHAT_ID} on bot startup")
-            except Exception as e:
-                logger.error(f"Error sending test message to group chat {OTP_GROUP_CHAT_ID} on startup: {e}", exc_info=True)
-
-
-
-        async def run_webserver():
-            web_app = web.Application()
-            web_app.router.add_post("/twilio-webhook", twilio_webhook)
-            runner = web.AppRunner(web_app)
-            await runner.setup()
-            site = web.TCPSite(runner, "0.0.0.0", 8080)
-            await site.start()
-            logger.info("Webserver running on port 8080")
-
-        loop = asyncio.get_event_loop()
-        loop.create_task(send_startup_test_message())  # Run test message on startup
-        loop.create_task(run_webserver())
-        app.run_polling()
+        await bot.send_message(
+            chat_id=OTP_GROUP_CHAT_ID,
+            text=escape_markdown_v2("✅ Bot started successfully!"),
+            parse_mode="MarkdownV2"
+        )
+        logger.info(f"Test message sent to group chat {OTP_GROUP_CHAT_ID} on bot startup")
     except Exception as e:
-        logger.error(f"Error in main: {e}")
-        raise
+        logger.error(f"Error sending test message: {e}", exc_info=True)
+
+async def setup_webhook():
+    await app.bot.set_webhook(f"{WEBHOOK_URL}/telegram-webhook")
+
+async def start_bot():
+    init_db()
+
+    global app
+    app = Application.builder().token(BOT_TOKEN).build()
+
+    # Register handlers
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("menu", menu))
+    app.add_handler(CommandHandler("redeem", redeem))
+    app.add_handler(CallbackQueryHandler(button_callback))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+    app.add_error_handler(error_handler)
+
+    await app.initialize()
+    await app.start()
+
+    # Start background OTP forwarder
+    app.create_task(forward_otps_to_group_periodically(app))
+
+    # Send startup test message
+    await send_startup_test_message()
+
+    # Set Telegram webhook
+    await setup_webhook()
+
+    # Start webserver
+    web_app = web.Application()
+    web_app.router.add_get("/", health_check)
+    web_app.router.add_post("/telegram-webhook", telegram_webhook)
+    web_app.router.add_post("/twilio-webhook", twilio_webhook)  # Already defined by you
+
+    runner = web.AppRunner(web_app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    await site.start()
+    logger.info("🚀 Webserver running on port 8080")
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(start_bot())
