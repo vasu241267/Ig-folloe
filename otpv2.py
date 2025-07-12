@@ -1735,10 +1735,12 @@ async def forward_otps_to_group_periodically(application):
                     received_time = msg.date_sent.strftime("%Y-%m-%d %H:%M:%S UTC") if msg.date_sent else datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
                     c.execute("SELECT 1 FROM processed_messages WHERE message_sid = ?", (msg.sid,))
                     if not c.fetchone():
+                        masked_number = number[-10:-6] + "******"  # e.g. last 10 digits: 8388392216 → 8388******
                         await application.bot.send_message(
                             OTP_GROUP_CHAT_ID,
-                            f"🔐 OTP for @{username} ({number}):\n{msg.body.strip()}"
-                        )
+                            f"🔐 OTP for @{username} ({masked_number}):\n{msg.body.strip()}"
+                             )
+
                         c.execute(
                             "INSERT INTO processed_messages (message_sid, user_id, phone_number, message_body, received_at) VALUES (?, ?, ?, ?, ?)",
                             (msg.sid, user_id, msg.from_, msg.body.strip(), received_time)
