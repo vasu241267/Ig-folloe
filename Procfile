@@ -1,1 +1,1 @@
-web: python otpV2.py
+web: python otpv2.py
