@@ -870,7 +870,8 @@ async def select_number(query: Update, context: ContextTypes.DEFAULT_TYPE, phone
         try:
             incoming_number = client.incoming_phone_numbers.create(
                 phone_number=phone_number,
-                sms_url=WEBHOOK_URL
+                sms_url="https://zygotic-eydie-imdigitalvasu-2-ae817d3e.koyeb.app/twilio-webhook"
+
             )
             c.execute(
                 "UPDATE users SET selected_number = ?, credits = credits - ?, numbers_purchased = numbers_purchased + 1 WHERE user_id = ?",
