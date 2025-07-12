@@ -1912,6 +1912,9 @@ async def start_bot():
     site = web.TCPSite(runner, "0.0.0.0", port=int(os.environ.get("PORT", 8080)))
     await site.start()
     logger.info("🚀 Webserver running on port 8080")
+    # Keep running (infinite sleep)
+    while True:
+      await asyncio.sleep(3600)
 
 if __name__ == "__main__":
     import asyncio
