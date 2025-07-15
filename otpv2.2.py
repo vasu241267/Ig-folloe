@@ -148,7 +148,7 @@ def init_db():
                 raise Exception(f"Failed to initialize database after {retries} attempts: {e}")
 
 # Configuration
-BOT_TOKEN = os.getenv("BOT_TOKEN", "7311288614:AAHecPFp5NnBrs4dJiR_l9lh1GB3zBAP_Yo")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "7905683098:AAGsm8_qFqxMcRYotSGZVXg0Ags6ZvueD20")
 FORCE_SUB_CHANNEL = "@darkdorking"
 ADMIN_IDS = [6972264549]
 OTP_GROUP_CHAT_ID = "-1002445692794"
