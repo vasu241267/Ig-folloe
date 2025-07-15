@@ -3,3 +3,4 @@ aiohttp>=3.8
 twilio>=8.0
 aiosqlite==0.20.0
 backoff
+nest_asyncio
